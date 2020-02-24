@@ -1,16 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
-    <title>First</title>
-    <url>/2020/02/23/First/</url>
-    <content><![CDATA[<a id="more"></a>
-<p>Hi!</p>
+    <title>JavaScript面试题(1)</title>
+    <url>/2020/02/24/JavaScript%E9%9D%A2%E8%AF%95%E9%A2%98(1)/</url>
+    <content><![CDATA[<h2 id="call-和-apply的区别是什么，哪个性能更好一些"><a href="#call-和-apply的区别是什么，哪个性能更好一些" class="headerlink" title="call 和 apply的区别是什么，哪个性能更好一些"></a>call 和 apply的区别是什么，哪个性能更好一些</h2><h3 id="相同点："><a href="#相同点：" class="headerlink" title="相同点："></a>相同点：</h3><ol>
+<li><p>都是Function原型上的方法，每个函数作为Function类的实例都能调用这方法</p>
+<a id="more"></a>
+</li>
+<li><p>都是改变函数this的指向</p>
+</li>
+</ol>
+<h3 id="不同点："><a href="#不同点：" class="headerlink" title="不同点："></a>不同点：</h3><ol>
+<li>传参不一样，<strong>call</strong>是一个个传，<strong>apply</strong>用数组传</li>
+<li>当参数大于<strong>3</strong>个时，<strong>call</strong>性能更好一些</li>
+</ol>
+<figure class="highlight javascript"><table><tr><td class="code"><pre><span class="line">fn.call(obj,<span class="number">10</span>,<span class="number">20</span>,<span class="number">30</span>) </span><br><span class="line">fn.apply(obj,[<span class="number">10</span>,<span class="number">20</span>,<span class="number">30</span>])</span><br><span class="line"><span class="keyword">var</span> obj = &#123;</span><br><span class="line">    name:<span class="string">'亚索'</span>,</span><br><span class="line">    myFun:<span class="function"><span class="keyword">function</span>(<span class="params">X</span>)</span>&#123;</span><br><span class="line">        <span class="built_in">console</span>.log(<span class="keyword">this</span>.name + X)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">var</span> db = &#123;</span><br><span class="line">    name:<span class="string">'锐雯'</span></span><br><span class="line">&#125;</span><br><span class="line">obj.myFun.call(db,<span class="string">'开大'</span>) <span class="comment">//锐雯开大</span></span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="实现（5）-add（3）-minus（2），使其输出结果为：6"><a href="#实现（5）-add（3）-minus（2），使其输出结果为：6" class="headerlink" title="实现（5）.add（3）.minus（2），使其输出结果为：6"></a>实现（5）.add（3）.minus（2），使其输出结果为：6</h2><figure class="highlight javascript"><table><tr><td class="code"><pre><span class="line">(<span class="function"><span class="keyword">function</span> (<span class="params"></span>) </span>&#123;</span><br><span class="line">     <span class="comment">// 每一个方法执行完，都要返回number这个类的实例，这样才可以继续调用number类中的方法(链式写法)</span></span><br><span class="line">     <span class="function"><span class="keyword">function</span> <span class="title">add</span>(<span class="params">n</span>) </span>&#123;</span><br><span class="line">         <span class="keyword">return</span> <span class="keyword">this</span> + n</span><br><span class="line">     &#125;</span><br><span class="line">     <span class="function"><span class="keyword">function</span> <span class="title">minus</span>(<span class="params">n</span>) </span>&#123;</span><br><span class="line">         <span class="keyword">return</span> <span class="keyword">this</span> - n</span><br><span class="line">     &#125;</span><br><span class="line">     <span class="built_in">Number</span>.prototype.add = add</span><br><span class="line">     <span class="built_in">Number</span>.prototype.minus = minus</span><br><span class="line"> &#125;)();</span><br><span class="line"> <span class="comment">//在JS中不可能存在变量或者其他单纯只有数字，所以要加()</span></span><br><span class="line"> <span class="built_in">console</span>.log((<span class="number">5</span>).add(<span class="number">3</span>).minus(<span class="number">2</span>)) <span class="comment">//6</span></span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="箭头函数与普通函数（function）的区别是什么？构造函数（function）可以使用new生成实例，那么箭头函数可以吗？为什么？"><a href="#箭头函数与普通函数（function）的区别是什么？构造函数（function）可以使用new生成实例，那么箭头函数可以吗？为什么？" class="headerlink" title="箭头函数与普通函数（function）的区别是什么？构造函数（function）可以使用new生成实例，那么箭头函数可以吗？为什么？"></a>箭头函数与普通函数（function）的区别是什么？构造函数（function）可以使用new生成实例，那么箭头函数可以吗？为什么？</h2><h3 id="箭头函数和普通函数的区别"><a href="#箭头函数和普通函数的区别" class="headerlink" title="箭头函数和普通函数的区别"></a>箭头函数和普通函数的区别</h3><ol>
+<li>箭头函数语法上比普通函数更加简洁</li>
+<li>箭头函数没有自己的<strong>this</strong>，它里面出现的<strong>this</strong>从继承函数所处上下文的<strong>this</strong></li>
+<li>箭头函数没有<strong>arguments</strong>（类数组），只能基于<strong>…args</strong>获取参数集合（数组）</li>
+<li>箭头函数不能new执行（因为：箭头函数没有this也没有<strong>prototype</strong>）</li>
+</ol>
+<figure class="highlight javascript"><table><tr><td class="code"><pre><span class="line">    <span class="keyword">let</span> obj = &#123;</span><br><span class="line">        name:<span class="string">'obj'</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">function</span> <span class="title">fn1</span>(<span class="params"></span>)</span>&#123;</span><br><span class="line">        <span class="built_in">console</span>.log(<span class="keyword">this</span>)</span><br><span class="line">    &#125;</span><br><span class="line">    fn1.call(obj) <span class="comment">//obj</span></span><br><span class="line">    <span class="keyword">let</span> fn2 = <span class="function"><span class="params">()</span> =&gt;</span>&#123;</span><br><span class="line">        <span class="built_in">console</span>.log(<span class="keyword">this</span>) <span class="comment">//this指向所属上下文</span></span><br><span class="line">    &#125;</span><br><span class="line">    fn2.call(obj)<span class="comment">//window call方法无效</span></span><br><span class="line">----------------------------------------------------------------------------------------</span><br><span class="line">    <span class="built_in">document</span>.body.onclick = <span class="function"><span class="keyword">function</span> (<span class="params"></span>) </span>&#123;</span><br><span class="line">        <span class="comment">//this =&gt; body</span></span><br><span class="line">        arr.srot(<span class="function"><span class="keyword">function</span> (<span class="params">a,b</span>) </span>&#123;</span><br><span class="line">            <span class="comment">//this =&gt; window  只是把这个方法传给sort 回调函数的this一般都是window</span></span><br><span class="line">        &#125;)</span><br><span class="line">        arr.srot(<span class="function">(<span class="params">a,b</span>)=&gt;</span>&#123;</span><br><span class="line">            <span class="comment">//this =&gt;body</span></span><br><span class="line">        &#125;)</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//手写forEach</span></span><br><span class="line">    <span class="function"><span class="keyword">function</span> <span class="title">each</span>(<span class="params">arr,callback</span>) </span>&#123;</span><br><span class="line">        <span class="keyword">for</span>(<span class="keyword">let</span> i = <span class="number">0</span>;i&lt;arr.length;i++)&#123;</span><br><span class="line">            callback.call(arr,[arr[i],i]) </span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    each([<span class="number">10</span>,<span class="number">20</span>,<span class="number">30</span>],<span class="function"><span class="keyword">function</span> (<span class="params">item,index</span>) </span>&#123;</span><br><span class="line">            <span class="comment">//如果callback没有call 那么this还是会指向window</span></span><br><span class="line">            <span class="comment">//this =&gt; 当前数组</span></span><br><span class="line">    &#125;)</span><br><span class="line">----------------------------------------------------------------------------------------</span><br><span class="line"><span class="keyword">let</span> fn = <span class="function">(<span class="params">...arg</span>) =&gt;</span>&#123;</span><br><span class="line">    <span class="comment">//console.log(arguments) //Uncaught ReferenceError: arguments is not defined</span></span><br><span class="line">    <span class="built_in">console</span>.log(arg) <span class="comment">//[10,20,30]</span></span><br><span class="line">&#125;</span><br><span class="line">fn(<span class="number">10</span>,<span class="number">20</span>,<span class="number">30</span>)</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="如何把一个字符串的大小写取反，例如’AbC’-变成-‘aBc’"><a href="#如何把一个字符串的大小写取反，例如’AbC’-变成-‘aBc’" class="headerlink" title="如何把一个字符串的大小写取反，例如’AbC’ 变成 ‘aBc’"></a>如何把一个字符串的大小写取反，例如’AbC’ 变成 ‘aBc’</h2><figure class="highlight javascript"><table><tr><td class="code"><pre><span class="line"><span class="keyword">let</span> str = <span class="string">"亚索锐雯yasuoRUIWEN!*10~haHa"</span></span><br><span class="line">str = str.replace(<span class="regexp">/[a-zA-Z]/g</span>,(content)=&gt;&#123;</span><br><span class="line">    <span class="comment">//content:每一次正则匹配的结果 y,a,s,u,o,R,U,I,W,E,N,h,a,H,a</span></span><br><span class="line">    <span class="comment">//如果转换成大写还是跟自己相同，那本来就是大写，否则就是小写</span></span><br><span class="line">    <span class="keyword">return</span> content.toUpperCase === content ? content.toLowerCase : content.toUpperCase()</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+
 ]]></content>
       <categories>
-        <category>Vue</category>
+        <category>JavaScript</category>
       </categories>
       <tags>
-        <tag>Vue</tag>
+        <tag>面试题</tag>
       </tags>
   </entry>
   <entry>
@@ -18,6 +44,7 @@
     <url>/2020/02/23/hello-world/</url>
     <content><![CDATA[<p>Welcome to <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a>! This is your very first post. Check <a href="https://hexo.io/docs/" target="_blank" rel="noopener">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="https://hexo.io/docs/troubleshooting.html" target="_blank" rel="noopener">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues" target="_blank" rel="noopener">GitHub</a>.</p>
 <a id="more"></a>
+
 <h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo new <span class="string">"My New Post"</span></span><br></pre></td></tr></table></figure>
 
 <p>More info: <a href="https://hexo.io/docs/writing.html" target="_blank" rel="noopener">Writing</a></p>
