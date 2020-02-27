@@ -1,6 +1,83 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
+    <title>详解JS的EventLoop</title>
+    <url>/2020/02/27/%E8%AF%A6%E8%A7%A3JS%E7%9A%84EventLoop/</url>
+    <content><![CDATA[<h2 id="执行栈与事件队列"><a href="#执行栈与事件队列" class="headerlink" title="执行栈与事件队列"></a><strong>执行栈与事件队列</strong></h2><p>当<strong>javascript</strong>代码执行的时候会将不同的变量存于内存中的不同位置：堆（heap）和栈（stack）中来加以区分。其中，堆里存放着一些对象。而栈中则存放着一些基础类型变量以及对象的指针。 但是我们这里说的执行栈和上面这个栈的意义却有些不同。</p>
+<a id="more"></a>
+
+<p>我们知道，当我们调用一个方法的时候，js会生成一个与这个方法对应的执行环境（context），又叫执行上下文。这个执行环境中存在着这个方法的私有作用域，上层作用域的指向，方法的参数，这个作用域中定义的变量以及这个作用域的this对象。 而当一系列方法被依次调用的时候，因为js是单线程的，同一时间只能执行一个方法，于是这些方法被排队在一个单独的地方。这个地方被称为执行栈。</p>
+<p>当一个脚本第一次执行的时候，js引擎会解析这段代码，并将其中的同步代码按照执行顺序加入执行栈中，然后从头开始执行。如果当前执行的是一个方法，那么js会向执行栈中添加这个方法的执行环境，然后进入这个执行环境继续执行其中的代码。当这个执行环境中的代码 执行完毕并返回结果后，js会退出这个执行环境并把这个执行环境销毁，回到上一个方法的执行环境。。这个过程反复进行，直到执行栈中的代码全部执行完毕。</p>
+<p>下面这个图片非常直观的展示了这个过程，其中的global就是初次运行脚本时向执行栈中加入的代码：</p>
+<p><img src="/images/v2-2f761eb83b50f53d741e6aa1f15a9db1_b.webp" alt="aa"></p>
+<p>从图片可知，一个方法执行会向执行栈中加入这个方法的执行环境，在这个执行环境中还可以调用其他方法，甚至是自己，其结果不过是在执行栈中再添加一个执行环境。这个过程可以是无限进行下去的，除非发生了栈溢出，即超过了所能使用内存的最大值。</p>
+<p>以上的过程说的都是同步代码的执行。那么当一个异步代码（如发送ajax请求数据）执行后会如何呢？前文提过，js的另一大特点是非阻塞，实现这一点的关键在于下面要说的这项机制——事件队列（Task Queue）。</p>
+<p>js引擎遇到一个异步事件后并不会一直等待其返回结果，而是会将这个事件挂起，继续执行执行栈中的其他任务。当一个异步事件返回结果后，js会将这个事件加入与当前执行栈不同的另一个队列，我们称之为事件队列。被放入事件队列不会立刻执行其回调，而是等待当前执行栈中的所有任务都执行完毕， 主线程处于闲置状态时，主线程会去查找事件队列是否有任务。如果有，那么主线程会从中取出排在第一位的事件，并把这个事件对应的回调放入执行栈中，然后执行其中的同步代码…，如此反复，这样就形成了一个无限的循环。这就是这个过程被称为“事件循环（Event Loop）”的原因。</p>
+<p>这里还有一张图来展示这个过程：</p>
+<p><img src="/images/v2-da078fa3eadf3db4bf455904ae06f84b_720w.jpg" alt="aa"></p>
+<p>图中的stack表示我们所说的执行栈，web apis则是代表一些异步事件，而callback queue即事件队列。</p>
+<h2 id="macro-task与micro-task"><a href="#macro-task与micro-task" class="headerlink" title="macro task与micro task"></a><strong>macro task与micro task</strong></h2><p>以上的事件循环过程是一个宏观的表述，实际上因为异步任务之间并不相同，因此他们的执行优先级也有区别。不同的异步任务被分为两类：微任务（micro task）和宏任务（macro task）。</p>
+<p>以下事件属于宏任务：</p>
+<ul>
+<li><code>setInterval()</code></li>
+<li><code>setTimeout()</code></li>
+</ul>
+<p>以下事件属于微任务</p>
+<ul>
+<li><code>new Promise()</code></li>
+<li><code>new MutaionObserver()</code></li>
+</ul>
+<p>前面我们介绍过，在一个事件循环中，异步事件返回结果后会被放到一个任务队列中。然而，根据这个异步事件的类型，这个事件实际上会被对应的宏任务队列或者微任务队列中去。并且在当前执行栈为空的时候，主线程会 查看微任务队列是否有事件存在。如果不存在，那么再去宏任务队列中取出一个事件并把对应的回到加入当前执行栈；如果存在，则会依次执行队列中事件对应的回调，直到微任务队列为空，然后去宏任务队列中取出最前面的一个事件，把对应的回调加入当前执行栈…如此反复，进入循环。</p>
+<p>我们只需记住<strong>当当前执行栈执行完毕时会立刻先处理所有微任务队列中的事件，然后再去宏任务队列中取出一个事件。同一次事件循环中，微任务永远在宏任务之前执行</strong>。</p>
+<p>这样就能解释下面这段代码的结果：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">setTimeout(function () &#123;</span><br><span class="line">    console.log(1);</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">new Promise(function(resolve,reject)&#123;</span><br><span class="line">    console.log(2)</span><br><span class="line">    resolve(3)</span><br><span class="line">&#125;).then(function(val)&#123;</span><br><span class="line">    console.log(val);</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+
+<p>结果为：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">2</span><br><span class="line">3</span><br><span class="line">1</span><br></pre></td></tr></table></figure>]]></content>
+      <categories>
+        <category>JavaScript</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>浅拷贝与深拷贝</title>
+    <url>/2020/02/26/%E6%B5%85%E6%8B%B7%E8%B4%9D%E4%B8%8E%E6%B7%B1%E6%8B%B7%E8%B4%9D/</url>
+    <content><![CDATA[<h2 id="浅拷贝"><a href="#浅拷贝" class="headerlink" title="浅拷贝"></a>浅拷贝</h2><p>浅拷贝是拷贝一层，深层次的对象级别的就拷贝引用</p>
+<a id="more"></a>
+
+<figure class="highlight javascript"><table><tr><td class="code"><pre><span class="line"><span class="keyword">var</span> obj = &#123;<span class="attr">a</span>:<span class="number">1</span>,<span class="attr">b</span>:<span class="number">2</span>,<span class="attr">c</span>:&#123;<span class="attr">d</span>:<span class="number">10</span>,<span class="attr">e</span>:<span class="number">20</span>&#125;&#125;</span><br><span class="line"><span class="keyword">var</span> obj1 = &#123;&#125;;</span><br><span class="line"><span class="keyword">for</span>(<span class="keyword">var</span> key <span class="keyword">in</span> obj)&#123;</span><br><span class="line">    obj1[key] = obj[key]</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//Object.assign(obj1,obj) 也是浅拷贝</span></span><br><span class="line">obj.a=<span class="number">100</span></span><br><span class="line"><span class="built_in">console</span>.log(obj1.a)<span class="comment">//10 不会发生改变</span></span><br><span class="line">obj.c.d=<span class="number">100</span></span><br><span class="line"><span class="built_in">console</span>.log(obj1.c.d)<span class="comment">//100 一样改变</span></span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="深拷贝"><a href="#深拷贝" class="headerlink" title="深拷贝"></a>深拷贝</h2><p>深拷贝是拷贝多层，每一级别的数据都会拷贝出来</p>
+<p>第一种：</p>
+<figure class="highlight javascript"><table><tr><td class="code"><pre><span class="line"><span class="keyword">var</span> obj = &#123;<span class="attr">a</span>:<span class="number">1</span>,<span class="attr">b</span>:<span class="number">2</span>,<span class="attr">c</span>:&#123;<span class="attr">d</span>:<span class="number">10</span>,<span class="attr">e</span>:<span class="number">20</span>&#125;&#125;</span><br><span class="line"><span class="keyword">var</span> obj1 = &#123;&#125;;</span><br><span class="line">obj1 = <span class="built_in">JSON</span>.parse(<span class="built_in">JSON</span>.stringify(obj))</span><br><span class="line">obj.c.d=<span class="number">100</span></span><br><span class="line"><span class="built_in">console</span>.log(obj1.c.d)<span class="comment">//10 不会改变</span></span><br></pre></td></tr></table></figure>
+
+<p>第二种：</p>
+<figure class="highlight javascript"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">deepClone</span>(<span class="params">obj</span>) </span>&#123;</span><br><span class="line">    <span class="keyword">var</span> target=&#123;&#125;</span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">let</span> key <span class="keyword">in</span> obj)&#123;</span><br><span class="line">        <span class="keyword">if</span>(obj.hasOwnProperty(key))&#123;</span><br><span class="line">            <span class="keyword">if</span> (<span class="keyword">typeof</span> obj[key] === <span class="string">'object'</span>)&#123;</span><br><span class="line">                target[key] = deepClone(obj[key])</span><br><span class="line">            &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">                target[key] = obj[key]</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> target</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">obj1 = deepClone(obj)</span><br></pre></td></tr></table></figure>
+
+]]></content>
+      <categories>
+        <category>JavaScript</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>防抖与节流</title>
+    <url>/2020/02/26/%E9%98%B2%E6%8A%96%E4%B8%8E%E8%8A%82%E6%B5%81/</url>
+    <content><![CDATA[<h2 id="防抖"><a href="#防抖" class="headerlink" title="防抖"></a>防抖</h2><p>函数防抖：将几次操作合并为一此操作进行。原理是维护一个计时器，规定在delay时间后触发函数，但是在delay时间内再次触发的话，就会取消之前的计时器而重新设置。这样一来，只有最后一次操作能被触发。（取消前面的计时，触发最后一次，重新计时）</p>
+<a id="more"></a>
+
+<figure class="highlight javascript"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">debounce</span>(<span class="params">callback,delay</span>)</span>&#123;</span><br><span class="line">    <span class="keyword">let</span> timer = <span class="literal">null</span></span><br><span class="line">    <span class="keyword">return</span> <span class="function"><span class="keyword">function</span>(<span class="params">...args</span>)</span>&#123;</span><br><span class="line">        <span class="keyword">if</span>(timer)clearTimeout(timer)</span><br><span class="line">        timer = setTimeout(<span class="function"><span class="params">()</span>=&gt;</span>&#123;</span><br><span class="line">            callback.apply(<span class="keyword">this</span>,args)</span><br><span class="line">        &#125;,delay)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="built_in">window</span>.onclick=debounce(<span class="function"><span class="keyword">function</span> (<span class="params"></span>) </span>&#123;</span><br><span class="line">    <span class="built_in">console</span>.log(<span class="number">1</span>)</span><br><span class="line">&#125;,<span class="number">500</span>)</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="节流"><a href="#节流" class="headerlink" title="节流"></a>节流</h2><p>函数节流：使得一定时间内只触发一次函数。原理是通过判断是否到达一定时间来触发函数。（一段时间触发一次）</p>
+<figure class="highlight javascript"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">throttle</span>(<span class="params">callback,duration</span>) </span>&#123;</span><br><span class="line">    <span class="keyword">let</span> lastTime = <span class="keyword">new</span> <span class="built_in">Date</span>().getTime()</span><br><span class="line">    <span class="keyword">return</span> <span class="function"><span class="keyword">function</span> (<span class="params">...args</span>) </span>&#123;</span><br><span class="line">        <span class="keyword">let</span> now = <span class="keyword">new</span> <span class="built_in">Date</span>().getTime()</span><br><span class="line">        <span class="keyword">if</span>(now - lastTime &gt; duration)&#123;</span><br><span class="line">            callback.apply(<span class="keyword">this</span>,args)</span><br><span class="line">            lastTime = now <span class="comment">//最后要把上一次的时间 变成 现在的时间</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="built_in">window</span>.onclick=throttle(<span class="function"><span class="keyword">function</span> (<span class="params"></span>) </span>&#123;</span><br><span class="line">    <span class="built_in">console</span>.log(<span class="number">1</span>)</span><br><span class="line">&#125;,<span class="number">1000</span>)</span><br></pre></td></tr></table></figure>
+
+]]></content>
+      <categories>
+        <category>JavaScript</category>
+      </categories>
+  </entry>
+  <entry>
     <title>冒泡排序、插入排序、快速排序</title>
     <url>/2020/02/25/%E5%86%92%E6%B3%A1%E6%8E%92%E5%BA%8F%E3%80%81%E6%8F%92%E5%85%A5%E6%8E%92%E5%BA%8F%E3%80%81%E5%BF%AB%E9%80%9F%E6%8E%92%E5%BA%8F/</url>
     <content><![CDATA[<h2 id="冒泡排序"><a href="#冒泡排序" class="headerlink" title="冒泡排序"></a>冒泡排序</h2><p>​    让数组中的当前项和后一项进行比较，如果当前项比后一项大，则两项交换位置</p>
