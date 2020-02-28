@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.ico">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon.ico">
+  <link rel="mask-icon" href="/favicon.ico" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"yoursite.com","root":"/","scheme":"Gemini","version":"7.7.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="Vue 常考进阶知识点响应式原理Vue 内部使用了 Object.defineProperty() 来实现数据响应式，通过这个函数可以监听到 set 和 get 的事件。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Vue进阶面试题">
+<meta property="og:url" content="http://yoursite.com/2020/02/28/Vue%E8%BF%9B%E9%98%B6%E9%9D%A2%E8%AF%95%E9%A2%98/index.html">
+<meta property="og:site_name" content="Jack Pen">
+<meta property="og:description" content="Vue 常考进阶知识点响应式原理Vue 内部使用了 Object.defineProperty() 来实现数据响应式，通过这个函数可以监听到 set 和 get 的事件。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2020-02-28T13:47:32.000Z">
+<meta property="article:modified_time" content="2020-02-28T14:19:01.296Z">
+<meta property="article:author" content="Jack Pen">
+<meta property="article:tag" content="面试题">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2020/02/28/Vue%E8%BF%9B%E9%98%B6%E9%9D%A2%E8%AF%95%E9%A2%98/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+
+  <title>Vue进阶面试题 | Jack Pen</title>
+  
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?127ec9d53229c87f44d12764eba63218";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Jack Pen</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/02/28/Vue%E8%BF%9B%E9%98%B6%E9%9D%A2%E8%AF%95%E9%A2%98/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/timg.jpg">
+      <meta itemprop="name" content="Jack Pen">
+      <meta itemprop="description" content="程序猿大战码农">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jack Pen">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Vue进阶面试题
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-02-28 21:47:32 / 修改时间：22:19:01" itemprop="dateCreated datePublished" datetime="2020-02-28T21:47:32+08:00">2020-02-28</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Vue/" itemprop="url" rel="index"><span itemprop="name">Vue</span></a>
+                </span>
+            </span>
+
+          
+            <span id="/2020/02/28/Vue%E8%BF%9B%E9%98%B6%E9%9D%A2%E8%AF%95%E9%A2%98/" class="post-meta-item leancloud_visitors" data-flag-title="Vue进阶面试题" title="阅读次数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span class="leancloud-visitors-count"></span>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="fa fa-comment-o"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2020/02/28/Vue%E8%BF%9B%E9%98%B6%E9%9D%A2%E8%AF%95%E9%A2%98/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2020/02/28/Vue%E8%BF%9B%E9%98%B6%E9%9D%A2%E8%AF%95%E9%A2%98/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="Vue-常考进阶知识点"><a href="#Vue-常考进阶知识点" class="headerlink" title="Vue 常考进阶知识点"></a>Vue 常考进阶知识点</h1><h2 id="响应式原理"><a href="#响应式原理" class="headerlink" title="响应式原理"></a>响应式原理</h2><p>Vue 内部使用了 <code>Object.defineProperty()</code> 来实现数据响应式，通过这个函数可以监听到 <code>set</code> 和 <code>get</code> 的事件。</p>
+<a id="more"></a>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">var data &#x3D; &#123; name: &#39;yck&#39; &#125;</span><br><span class="line">observe(data)</span><br><span class="line">let name &#x3D; data.name &#x2F;&#x2F; -&gt; get value</span><br><span class="line">data.name &#x3D; &#39;yyy&#39; &#x2F;&#x2F; -&gt; change value</span><br><span class="line"></span><br><span class="line">function observe(obj) &#123;</span><br><span class="line">  &#x2F;&#x2F; 判断类型</span><br><span class="line">  if (!obj || typeof obj !&#x3D;&#x3D; &#39;object&#39;) &#123;</span><br><span class="line">    return</span><br><span class="line">  &#125;</span><br><span class="line">  Object.keys(obj).forEach(key &#x3D;&gt; &#123;</span><br><span class="line">    defineReactive(obj, key, obj[key])</span><br><span class="line">  &#125;)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">function defineReactive(obj, key, val) &#123;</span><br><span class="line">  &#x2F;&#x2F; 递归子属性</span><br><span class="line">  observe(val)</span><br><span class="line">  Object.defineProperty(obj, key, &#123;</span><br><span class="line">    &#x2F;&#x2F; 可枚举</span><br><span class="line">    enumerable: true,</span><br><span class="line">    &#x2F;&#x2F; 可配置</span><br><span class="line">    configurable: true,</span><br><span class="line">    &#x2F;&#x2F; 自定义函数</span><br><span class="line">    get: function reactiveGetter() &#123;</span><br><span class="line">      console.log(&#39;get value&#39;)</span><br><span class="line">      return val</span><br><span class="line">    &#125;,</span><br><span class="line">    set: function reactiveSetter(newVal) &#123;</span><br><span class="line">      console.log(&#39;change value&#39;)</span><br><span class="line">      val &#x3D; newVal</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>以上代码简单的实现了如何监听数据的 <code>set</code> 和 <code>get</code> 的事件，但是仅仅如此是不够的，因为自定义的函数一开始是不会执行的。只有先执行了依赖收集，才能在属性更新的时候派发更新，所以接下来我们需要先触发依赖收集。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&lt;div&gt;</span><br><span class="line">    &#123;&#123;name&#125;&#125;</span><br><span class="line">&lt;&#x2F;div&gt;</span><br></pre></td></tr></table></figure>
+
+<p>在解析如上模板代码时，遇到 <code></code> 就会进行依赖收集。</p>
+<p>接下来我们先来实现一个 <code>Dep</code> 类，用于解耦属性的依赖收集和派发更新操作。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F; 通过 Dep 解耦属性的依赖和更新操作</span><br><span class="line">class Dep &#123;</span><br><span class="line">  constructor() &#123;</span><br><span class="line">    this.subs &#x3D; []</span><br><span class="line">  &#125;</span><br><span class="line">  &#x2F;&#x2F; 添加依赖</span><br><span class="line">  addSub(sub) &#123;</span><br><span class="line">    this.subs.push(sub)</span><br><span class="line">  &#125;</span><br><span class="line">  &#x2F;&#x2F; 更新</span><br><span class="line">  notify() &#123;</span><br><span class="line">    this.subs.forEach(sub &#x3D;&gt; &#123;</span><br><span class="line">      sub.update()</span><br><span class="line">    &#125;)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line">&#x2F;&#x2F; 全局属性，通过该属性配置 Watcher</span><br><span class="line">Dep.target &#x3D; null</span><br></pre></td></tr></table></figure>
+
+<p>以上的代码实现很简单，当需要依赖收集的时候调用 <code>addSub</code>，当需要派发更新的时候调用 <code>notify</code>。</p>
+<p>接下来我们先来简单的了解下 Vue 组件挂载时添加响应式的过程。在组件挂载时，会先对所有需要的属性调用 <code>Object.defineProperty()</code>，然后实例化 <code>Watcher</code>，传入组件更新的回调。在实例化过程中，会对模板中的属性进行求值，触发依赖收集。</p>
+<p>因为这一小节主要目的是学习响应式原理的细节，所以接下来的代码会简略的表达触发依赖收集时的操作。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">class Watcher &#123;</span><br><span class="line">  constructor(obj, key, cb) &#123;</span><br><span class="line">    &#x2F;&#x2F; 将 Dep.target 指向自己</span><br><span class="line">    &#x2F;&#x2F; 然后触发属性的 getter 添加监听</span><br><span class="line">    &#x2F;&#x2F; 最后将 Dep.target 置空</span><br><span class="line">    Dep.target &#x3D; this</span><br><span class="line">    this.cb &#x3D; cb</span><br><span class="line">    this.obj &#x3D; obj</span><br><span class="line">    this.key &#x3D; key</span><br><span class="line">    this.value &#x3D; obj[key]</span><br><span class="line">    Dep.target &#x3D; null</span><br><span class="line">  &#125;</span><br><span class="line">  update() &#123;</span><br><span class="line">    &#x2F;&#x2F; 获得新值</span><br><span class="line">    this.value &#x3D; this.obj[this.key]</span><br><span class="line">    &#x2F;&#x2F; 调用 update 方法更新 Dom</span><br><span class="line">    this.cb(this.value)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>以上就是 <code>Watcher</code> 的简单实现，在执行构造函数的时候将 <code>Dep.target</code> 指向自身，从而使得收集到了对应的 <code>Watcher</code>，在派发更新的时候取出对应的 <code>Watcher</code> 然后执行 <code>update</code> 函数。</p>
+<p>接下来，需要对 <code>defineReactive</code> 函数进行改造，在自定义函数中添加依赖收集和派发更新相关的代码。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">function defineReactive(obj, key, val) &#123;</span><br><span class="line">  &#x2F;&#x2F; 递归子属性</span><br><span class="line">  observe(val)</span><br><span class="line">  let dp &#x3D; new Dep()</span><br><span class="line">  Object.defineProperty(obj, key, &#123;</span><br><span class="line">    enumerable: true,</span><br><span class="line">    configurable: true,</span><br><span class="line">    get: function reactiveGetter() &#123;</span><br><span class="line">      console.log(&#39;get value&#39;)</span><br><span class="line">      &#x2F;&#x2F; 将 Watcher 添加到订阅</span><br><span class="line">      if (Dep.target) &#123;</span><br><span class="line">        dp.addSub(Dep.target)</span><br><span class="line">      &#125;</span><br><span class="line">      return val</span><br><span class="line">    &#125;,</span><br><span class="line">    set: function reactiveSetter(newVal) &#123;</span><br><span class="line">      console.log(&#39;change value&#39;)</span><br><span class="line">      val &#x3D; newVal</span><br><span class="line">      &#x2F;&#x2F; 执行 watcher 的 update 方法</span><br><span class="line">      dp.notify()</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>以上所有代码实现了一个简易的数据响应式，核心思路就是手动触发一次属性的 getter 来实现依赖收集。</p>
+<p>现在我们就来测试下代码的效果，只需要把所有的代码复制到浏览器中执行，就会发现页面的内容全部被替换了。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">var data &#x3D; &#123; name: &#39;yck&#39; &#125;</span><br><span class="line">observe(data)</span><br><span class="line">function update(value) &#123;</span><br><span class="line">  document.querySelector(&#39;div&#39;).innerText &#x3D; value</span><br><span class="line">&#125;</span><br><span class="line">&#x2F;&#x2F; 模拟解析到 &#96;&#123;&#123;name&#125;&#125;&#96; 触发的操作</span><br><span class="line">new Watcher(data, &#39;name&#39;, update)</span><br><span class="line">&#x2F;&#x2F; update Dom innerText</span><br><span class="line">data.name &#x3D; &#39;yyy&#39;</span><br></pre></td></tr></table></figure>
+
+<h3 id="Object-defineProperty-的缺陷"><a href="#Object-defineProperty-的缺陷" class="headerlink" title="Object.defineProperty 的缺陷"></a>Object.defineProperty 的缺陷</h3><p>以上已经分析完了 Vue 的响应式原理，接下来说一点 <code>Object.defineProperty</code> 中的缺陷。</p>
+<p>如果通过下标方式修改数组数据或者给对象新增属性并不会触发组件的重新渲染，因为 <code>Object.defineProperty</code> 不能拦截到这些操作，更精确的来说，对于数组而言，大部分操作都是拦截不到的，只是 Vue 内部通过重写函数的方式解决了这个问题。</p>
+<p>对于第一个问题，Vue 提供了一个 API 解决</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">export function set (target: Array&lt;any&gt; | Object, key: any, val: any): any &#123;</span><br><span class="line">  &#x2F;&#x2F; 判断是否为数组且下标是否有效</span><br><span class="line">  if (Array.isArray(target) &amp;&amp; isValidArrayIndex(key)) &#123;</span><br><span class="line">    &#x2F;&#x2F; 调用 splice 函数触发派发更新</span><br><span class="line">    &#x2F;&#x2F; 该函数已被重写</span><br><span class="line">    target.length &#x3D; Math.max(target.length, key)</span><br><span class="line">    target.splice(key, 1, val)</span><br><span class="line">    return val</span><br><span class="line">  &#125;</span><br><span class="line">  &#x2F;&#x2F; 判断 key 是否已经存在</span><br><span class="line">  if (key in target &amp;&amp; !(key in Object.prototype)) &#123;</span><br><span class="line">    target[key] &#x3D; val</span><br><span class="line">    return val</span><br><span class="line">  &#125;</span><br><span class="line">  const ob &#x3D; (target: any).__ob__</span><br><span class="line">  &#x2F;&#x2F; 如果对象不是响应式对象，就赋值返回</span><br><span class="line">  if (!ob) &#123;</span><br><span class="line">    target[key] &#x3D; val</span><br><span class="line">    return val</span><br><span class="line">  &#125;</span><br><span class="line">  &#x2F;&#x2F; 进行双向绑定</span><br><span class="line">  defineReactive(ob.value, key, val)</span><br><span class="line">  &#x2F;&#x2F; 手动派发更新</span><br><span class="line">  ob.dep.notify()</span><br><span class="line">  return val</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>对于数组而言，Vue 内部重写了以下函数实现派发更新</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F; 获得数组原型</span><br><span class="line">const arrayProto &#x3D; Array.prototype</span><br><span class="line">export const arrayMethods &#x3D; Object.create(arrayProto)</span><br><span class="line">&#x2F;&#x2F; 重写以下函数</span><br><span class="line">const methodsToPatch &#x3D; [</span><br><span class="line">  &#39;push&#39;,</span><br><span class="line">  &#39;pop&#39;,</span><br><span class="line">  &#39;shift&#39;,</span><br><span class="line">  &#39;unshift&#39;,</span><br><span class="line">  &#39;splice&#39;,</span><br><span class="line">  &#39;sort&#39;,</span><br><span class="line">  &#39;reverse&#39;</span><br><span class="line">]</span><br><span class="line">methodsToPatch.forEach(function (method) &#123;</span><br><span class="line">  &#x2F;&#x2F; 缓存原生函数</span><br><span class="line">  const original &#x3D; arrayProto[method]</span><br><span class="line">  &#x2F;&#x2F; 重写函数</span><br><span class="line">  def(arrayMethods, method, function mutator (...args) &#123;</span><br><span class="line">  &#x2F;&#x2F; 先调用原生函数获得结果</span><br><span class="line">    const result &#x3D; original.apply(this, args)</span><br><span class="line">    const ob &#x3D; this.__ob__</span><br><span class="line">    let inserted</span><br><span class="line">    &#x2F;&#x2F; 调用以下几个函数时，监听新数据</span><br><span class="line">    switch (method) &#123;</span><br><span class="line">      case &#39;push&#39;:</span><br><span class="line">      case &#39;unshift&#39;:</span><br><span class="line">        inserted &#x3D; args</span><br><span class="line">        break</span><br><span class="line">      case &#39;splice&#39;:</span><br><span class="line">        inserted &#x3D; args.slice(2)</span><br><span class="line">        break</span><br><span class="line">    &#125;</span><br><span class="line">    if (inserted) ob.observeArray(inserted)</span><br><span class="line">    &#x2F;&#x2F; 手动派发更新</span><br><span class="line">    ob.dep.notify()</span><br><span class="line">    return result</span><br><span class="line">  &#125;)</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+
+<h2 id="编译过程"><a href="#编译过程" class="headerlink" title="编译过程"></a>编译过程</h2><p>想必大家在使用 Vue 开发的过程中，基本都是使用模板的方式。那么你有过「模板是怎么在浏览器中运行的」这种疑虑嘛？</p>
+<p>首先直接把模板丢到浏览器中肯定是不能运行的，模板只是为了方便开发者进行开发。Vue 会通过编译器将模板通过几个阶段最终编译为 <code>render</code> 函数，然后通过执行 <code>render</code> 函数生成 Virtual DOM 最终映射为真实 DOM。</p>
+<p>接下来我们就来学习这个编译的过程，了解这个过程中大概发生了什么事情。这个过程其中又分为三个阶段，分别为：</p>
+<ol>
+<li>将模板解析为 AST</li>
+<li>优化 AST</li>
+<li>将 AST 转换为 <code>render</code> 函数</li>
+</ol>
+<p>在第一个阶段中，最主要的事情还是通过各种各样的正则表达式去匹配模板中的内容，然后将内容提取出来做各种逻辑操作，接下来会生成一个最基本的 AST 对象</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    &#x2F;&#x2F; 类型</span><br><span class="line">    type: 1,</span><br><span class="line">    &#x2F;&#x2F; 标签</span><br><span class="line">    tag,</span><br><span class="line">    &#x2F;&#x2F; 属性列表</span><br><span class="line">    attrsList: attrs,</span><br><span class="line">    &#x2F;&#x2F; 属性映射</span><br><span class="line">    attrsMap: makeAttrsMap(attrs),</span><br><span class="line">    &#x2F;&#x2F; 父节点</span><br><span class="line">    parent,</span><br><span class="line">    &#x2F;&#x2F; 子节点</span><br><span class="line">    children: []</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>然后会根据这个最基本的 AST 对象中的属性，进一步扩展 AST。</p>
+<p>当然在这一阶段中，还会进行其他的一些判断逻辑。比如说对比前后开闭标签是否一致，判断根组件是否只存在一个，判断是否符合 HTML5 <a href="https://link.juejin.im/?target=https%3A%2F%2Fdeveloper.mozilla.org%2Fzh-CN%2Fdocs%2FWeb%2FGuide%2FHTML%2FContent_categories">Content Model</a> 规范等等问题。</p>
+<p>接下来就是优化 AST 的阶段。在当前版本下，Vue 进行的优化内容其实还是不多的。只是对节点进行了静态内容提取，也就是将永远不会变动的节点提取了出来，实现复用 Virtual DOM，跳过对比算法的功能。在下一个大版本中，Vue 会在优化 AST 的阶段继续发力，实现更多的优化功能，尽可能的在编译阶段压榨更多的性能，比如说提取静态的属性等等优化行为。</p>
+<p>最后一个阶段就是通过 AST 生成 <code>render</code> 函数了。其实这一阶段虽然分支有很多，但是最主要的目的就是遍历整个 AST，根据不同的条件生成不同的代码罢了。</p>
+<h2 id="NextTick-原理分析"><a href="#NextTick-原理分析" class="headerlink" title="NextTick 原理分析"></a>NextTick 原理分析</h2><p><code>nextTick</code> 可以让我们在下次 DOM 更新循环结束之后执行延迟回调，用于获得更新后的 DOM。</p>
+<p>在 Vue 2.4 之前都是使用的 microtasks，但是 microtasks 的优先级过高，在某些情况下可能会出现比事件冒泡更快的情况，但如果都使用 macrotasks 又可能会出现渲染的性能问题。所以在新版本中，会默认使用 microtasks，但在特殊情况下会使用 macrotasks，比如 v-on。</p>
+<p>对于实现 macrotasks ，会先判断是否能使用 <code>setImmediate</code> ，不能的话降级为 <code>MessageChannel</code> ，以上都不行的话就使用 <code>setTimeout</code></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">if (typeof setImmediate !&#x3D;&#x3D; &#39;undefined&#39; &amp;&amp; isNative(setImmediate)) &#123;</span><br><span class="line">  macroTimerFunc &#x3D; () &#x3D;&gt; &#123;</span><br><span class="line">    setImmediate(flushCallbacks)</span><br><span class="line">  &#125;</span><br><span class="line">&#125; else if (</span><br><span class="line">  typeof MessageChannel !&#x3D;&#x3D; &#39;undefined&#39; &amp;&amp;</span><br><span class="line">  (isNative(MessageChannel) ||</span><br><span class="line">    &#x2F;&#x2F; PhantomJS</span><br><span class="line">    MessageChannel.toString() &#x3D;&#x3D;&#x3D; &#39;[object MessageChannelConstructor]&#39;)</span><br><span class="line">) &#123;</span><br><span class="line">  const channel &#x3D; new MessageChannel()</span><br><span class="line">  const port &#x3D; channel.port2</span><br><span class="line">  channel.port1.onmessage &#x3D; flushCallbacks</span><br><span class="line">  macroTimerFunc &#x3D; () &#x3D;&gt; &#123;</span><br><span class="line">    port.postMessage(1)</span><br><span class="line">  &#125;</span><br><span class="line">&#125; else &#123;</span><br><span class="line">  macroTimerFunc &#x3D; () &#x3D;&gt; &#123;</span><br><span class="line">    setTimeout(flushCallbacks, 0)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>以上代码很简单，就是判断能不能使用相应的 API。</p>
+
+    </div>
+
+    
+    
+    
+
+    
+        <div>
+    
+        <div style="text-align:center;color: #ccc;font-size:14px;">-------------本文结束<i class="fa fa-paw"></i>感谢您的阅读-------------</div>
+    
+</div>
+
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E9%9D%A2%E8%AF%95%E9%A2%98/" rel="tag"># 面试题</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/02/28/Vue%E9%9D%A2%E8%AF%95%E9%A2%98/" rel="prev" title="Vue面试题">
+      <i class="fa fa-chevron-left"></i> Vue面试题
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Vue-常考进阶知识点"><span class="nav-number">1.</span> <span class="nav-text">Vue 常考进阶知识点</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#响应式原理"><span class="nav-number">1.1.</span> <span class="nav-text">响应式原理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Object-defineProperty-的缺陷"><span class="nav-number">1.1.1.</span> <span class="nav-text">Object.defineProperty 的缺陷</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#编译过程"><span class="nav-number">1.2.</span> <span class="nav-text">编译过程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#NextTick-原理分析"><span class="nav-number">1.3.</span> <span class="nav-text">NextTick 原理分析</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jack Pen"
+      src="/images/timg.jpg">
+  <p class="site-author-name" itemprop="name">Jack Pen</p>
+  <div class="site-description" itemprop="description">程序猿大战码农</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">9</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">2</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">2</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jack Pen</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('//unpkg.com/valine/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : '4b0ozjgyQw7n0d6EMdJS5GFg-gzGzoHsz',
+      appKey     : 'vJqHhxlLnqTHkxRtA7hmyd2s',
+      placeholder: "Just go go",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : true,
+      lang       : '' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"debug":false,"model":{"jsonPath":"/live2dw/assets/haru02.model.json"},"display":{"position":"right","width":200,"height":350},"mobile":{"show":false},"react":{"opacity":0.7},"log":false});</script></body>
+</html>
+
+<!-- 页面点击小红心 -->
+<script type="text/javascript" src="/js/click.js"></script>
